@@ -42,7 +42,7 @@ Os arquivos gerados (`_ide_helper.php`, `.phpstorm.meta.php`) estão no `.gitign
 
 ```bash
 php artisan serve
-php artisan route:list --path=api
+php artisan route:list
 ```
 
 ## Qualidade de código

@@ -3,12 +3,12 @@
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
-it('retorna resposta de sucesso na rota inicial', function () {
-    $this->get('/')->assertOk();
+it('responde o health check', function () {
+    $this->get('/up')->assertOk();
 });
 
-it('bloqueia /api/user sem autenticação', function () {
-    $this->getJson('/api/user')->assertUnauthorized();
+it('bloqueia /user sem autenticação', function () {
+    $this->getJson('/user')->assertUnauthorized();
 });
 
 it('retorna o usuário autenticado via Sanctum', function () {
@@ -16,7 +16,7 @@ it('retorna o usuário autenticado via Sanctum', function () {
 
     Sanctum::actingAs($user);
 
-    $this->getJson('/api/user')
+    $this->getJson('/user')
         ->assertOk()
         ->assertJsonPath('id', $user->id);
 });
