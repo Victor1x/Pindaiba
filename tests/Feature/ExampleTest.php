@@ -1,19 +1,22 @@
 <?php
 
-namespace Tests\Feature;
+use App\Models\User;
+use Laravel\Sanctum\Sanctum;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+it('retorna resposta de sucesso na rota inicial', function () {
+    $this->get('/')->assertOk();
+});
 
-class ExampleTest extends TestCase
-{
-    /**
-     * A basic test example.
-     */
-    public function test_the_application_returns_a_successful_response(): void
-    {
-        $response = $this->get('/');
+it('bloqueia /api/user sem autenticação', function () {
+    $this->getJson('/api/user')->assertUnauthorized();
+});
 
-        $response->assertStatus(200);
-    }
-}
+it('retorna o usuário autenticado via Sanctum', function () {
+    $user = User::factory()->create();
+
+    Sanctum::actingAs($user);
+
+    $this->getJson('/api/user')
+        ->assertOk()
+        ->assertJsonPath('id', $user->id);
+});
