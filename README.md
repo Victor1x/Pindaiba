@@ -45,12 +45,59 @@ php artisan serve
 php artisan route:list
 ```
 
+## Arquitetura
+
+Arquitetura em camadas, cada camada só conversa com a de baixo:
+
+```
+HTTP (Controller, Request, Resource)
+        ↓
+Aplicação (Actions = casos de uso)
+        ↓
+Domínio (Services, Models, Enums, Policies, Exceptions)
+        ↓
+Infraestrutura (Banco, Filas, APIs externas)
+```
+
+```
+app/
+├── Actions/              # Casos de uso (1 classe = 1 ação)       → Actions/{Entidade}/{Verbo}{Entidade}Action
+├── DTOs/                 # Dados tipados (readonly)               → DTOs/{Entidade}/{Entidade}Data
+├── Enums/                # Status, papéis, tipos
+├── Events/  Listeners/   # Efeitos colaterais
+├── Exceptions/Domain/    # Violações de regra de negócio          → {Problema}Exception
+├── Http/
+│   ├── Controllers/Api/V1/   # Controllers magros (1–5 linhas por método)
+│   ├── Middleware/           # ForceJsonResponse
+│   ├── Requests/             # Validação + authorize()           → {Verbo}{Entidade}Request
+│   └── Resources/            # Saída JSON (nunca retornar Model)   → {Entidade}Resource
+├── Integrations/         # Clientes de APIs externas
+├── Jobs/                 # Tarefas assíncronas
+├── Models/  Policies/  Providers/
+├── Repositories/         # (Opcional) consultas complexas
+└── Services/             # Regras reutilizáveis                   → {Regra}Service
+```
+
+Regras principais: validação no FormRequest, regra de negócio na Action, nada de `$request` fora da camada HTTP (converta para DTO), sem strings mágicas (use Enums).
+O `tests/ArchTest.php` (Pest Arch) quebra o build se essas regras forem violadas.
+
+### Rotas
+
+Sem prefixo `/api`, versionadas em `/v1`, todas atrás de `auth:sanctum`:
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| GET | `/up` | Health check |
+| GET | `/v1/user` | Usuário autenticado (`UserResource`) |
+
+Toda requisição de API recebe `Accept: application/json` (middleware `ForceJsonResponse`), então erros sempre voltam em JSON.
+
 ## Qualidade de código
 
 | Comando | O que faz |
 | --- | --- |
 | `composer test` / `php artisan test --parallel` | Testes com Pest + Paratest |
-| `composer analyse` | Larastan (PHPStan, nível 6) |
+| `composer analyse` | Larastan (PHPStan, nível 8) |
 | `composer lint` | Pint em modo verificação |
 | `composer lint:fix` | Formata o código com Pint |
 
