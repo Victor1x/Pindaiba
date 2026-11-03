@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Cores
+NC='\033[0m'
+BBlue='\033[1;34m'
+BRed='\033[1;31m'
+
+REGEX_ISSUE_ID="[a-zA-Z0-9,\.\_\-]+-[0-9]+"
+BRANCH_NAME=$(git symbolic-ref --short HEAD)
+ISSUE_ID=$(echo "$BRANCH_NAME" | grep -o -E "$REGEX_ISSUE_ID")
+COMMIT_MESSAGE=$(cat "$1")
+
+if [ -z "$ISSUE_ID" ]; then
+    printf "%bBranch não está no padrão esperado...%b\n" "$BRed" "$NC"
+    exit 1
+fi
+
+# Extrai só o número da issue (ex: API-14 -> 14)
+ISSUE_NUMBER=$(echo "$ISSUE_ID" | grep -o -E "[0-9]+$")
+
+# Garante que a mensagem comece com "API-14: ..."
+case "$COMMIT_MESSAGE" in
+    "$ISSUE_ID"*)
+        ;;
+    *)
+        COMMIT_MESSAGE="$ISSUE_ID: $COMMIT_MESSAGE"
+        ;;
+esac
+
+# Garante que tenha "Closes #14" no final, se ainda não tiver
+if ! echo "$COMMIT_MESSAGE" | grep -q "Closes #$ISSUE_NUMBER"; then
+    COMMIT_MESSAGE=$(printf "%s\n\nCloses #%s" "$COMMIT_MESSAGE" "$ISSUE_NUMBER")
+fi
+
+echo "$COMMIT_MESSAGE" > "$1"
